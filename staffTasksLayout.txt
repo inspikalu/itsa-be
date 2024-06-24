@@ -1,0 +1,15 @@
+const express = require('express');
+const router = express.Router();
+const staffController = require('../controllers/staffController');
+
+// Define staff routes
+router.get('/devices', staffController.getAssignedDevices);
+router.post('/request-maintenance', staffController.createMaintenanceRequest);
+router.get('/maintenance-requests', staffController.getMaintenanceRequests);
+router.put('/edit-profile', staffController.editProfile);
+router.put('/change-password', staffController.changePassword);
+
+// Add more routes as needed for staff-specific actions
+
+module.exports = router;
+

@@ -1,0 +1,25 @@
+/**
+ * 
+ * const express = require('express');
+const router = express.Router();
+const subAdminController = require('../controllers/subAdminController');
+
+// Define sub-admin routes
+router.post('/create-staff', subAdminController.createStaff);
+router.put('/edit-staff/:id', subAdminController.editStaff);
+router.delete('/delete-staff/:id', subAdminController.deleteStaff);
+
+router.post('/assign-device', subAdminController.assignDevice);
+router.put('/edit-device/:id', subAdminController.editDevice);
+router.delete('/delete-device/:id', subAdminController.deleteDevice);
+
+router.post('/create-request', subAdminController.createRequest);
+router.put('/edit-request/:id', subAdminController.editRequest);
+router.delete('/delete-request/:id', subAdminController.deleteRequest);
+
+router.put('/escalate-request/:id', subAdminController.escalateRequest);
+router.get('/view-requests', subAdminController.viewRequests);
+
+module.exports = router;
+
+ */
