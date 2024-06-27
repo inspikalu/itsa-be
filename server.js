@@ -27,7 +27,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // Connect to MongoDB
 connectDB();
-
+app.get('/ping',(req, res)=>{res.json("Ping Successful")})
 app.use((req, res, next)=>{console.log(req.body, req.headers); next()})
 
 // Define routes
