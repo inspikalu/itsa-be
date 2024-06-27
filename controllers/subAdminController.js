@@ -6,6 +6,7 @@ const crypto = require("crypto");
 const SubAdmin = require("../models/SubAdmin");
 const Staff = require("../models/Staff");
 const Device = require("../models/Device");
+const Request = require("../models/Request");
 
 exports.login = async (req, res) => {
   try {
@@ -46,8 +47,8 @@ exports.deleteStaff = async (req, res) => {
   } catch (error) {}
 };
 
-exports.validateEmail =[
-  check('email').isEmail().withMessage("Please provide a valid email address")
+exports.validateEmail = [
+  check("email").isEmail().withMessage("Please provide a valid email address"),
 ];
 
 exports.createStaff = async (req, res) => {
@@ -79,8 +80,8 @@ exports.createStaff = async (req, res) => {
     const staffPassword = crypto.randomBytes(3).toString("hex");
     const hashedStaffPassword = await bcrypt.hash(staffPassword, 10);
 
-     // Create new staff member
-     const newStaff = new Staff({
+    // Create new staff member
+    const newStaff = new Staff({
       name,
       email,
       password: hashedStaffPassword,
@@ -109,15 +110,12 @@ exports.createStaff = async (req, res) => {
         .json({ message: "Organization and SubAdmin created successfully." });
     });
 
-   
-
     // Save staff member to the database
     await newStaff.save();
 
-
     res
       .status(201)
-      .json({ message: "Staff created successfully", staff: newStaff,  });
+      .json({ message: "Staff created successfully", staff: newStaff });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -256,3 +254,182 @@ exports.addNewDevice = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+exports.editRequest = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const updateData = req.body;
+    console.log(req.params);
+
+    if (!requestId || Object.keys(updateData).length === 0) {
+      return res.status(400).json({ message: "Invalid input" });
+    }
+
+    const { role } = req.user;
+    if (role !== "sub-admin" && role !== "admin")
+      return res.status(403).json({ message: "Unauthorized to edit request." });
+
+    const updatedRequest = await Request.findOneAndUpdate(
+      { requestId },
+      updateData,
+      { new: true }
+    );
+    if (!updatedRequest) {
+      return res.status(404).json({ message: "Request not found" });
+    }
+
+    res.status(200).json({
+      message: "Request updated successfully",
+      request: updatedRequest,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.assignDeviceToStaff = async (req, res) => {
+  try {
+    const { deviceId, staffId } = req.body;
+
+    // Validate input
+    if (!deviceId || !staffId) {
+      return res
+        .status(400)
+        .json({ message: "Device ID and Staff ID are required" });
+    }
+
+    // Verify user role from token
+    const { role } = req.user;
+    if (role !== "admin" && role !== "sub-admin") {
+      return res
+        .status(403)
+        .json({ message: "Unauthorized to assign device." });
+    }
+
+    // Find the device and staff
+    const device = await Device.findById(deviceId);
+    const staff = await Staff.findById(staffId);
+
+    if (!device) {
+      return res.status(404).json({ message: "Device not found" });
+    }
+
+    if (!staff) {
+      return res.status(404).json({ message: "Staff not found" });
+    }
+
+    // Check if the device is already assigned to another staff member
+    if (device.assignedTo) {
+      return res.status(400).json({
+        message: "Device is already assigned to another staff member",
+      });
+    }
+
+    // Assign the device to the staff
+    device.assignedTo = staff._id;
+    await device.save();
+
+    // Add the device to the staff's devices array
+    staff.devices.push(device._id);
+    await staff.save();
+
+    res
+      .status(200)
+      .json({ message: "Device assigned successfully", device, staff });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getAllRequests = async function (req, res) {
+  try {
+    const { role } = req.user;
+    if (role !== "admin" && role !== "sub-admin") {
+      return res
+        .status(403)
+        .json({ message: "Unauthorized to assign device." });
+    }
+    const requests = await Request.find();
+
+    if (!requests || requests.length === 0) {
+      return res.status(404).json({ message: "No requests made." });
+    }
+
+    res
+      .status(200)
+      .json({ message: "Requests retrieved successfully", requests });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getUnAssignedDevices = async function (req, res) {
+  try {
+    const { role } = req.user;
+    if (role !== "admin" && role !== "sub-admin") {
+      return res
+        .status(403)
+        .json({ message: "Unauthorized to assign device." });
+    }
+
+    const query = { assignedTo: { $exists: false } }; // Find documents where "assignedTo" field doesn't exist
+
+    // Device.find(query, (err, results) => {
+    //   if (err) {
+    //     return res
+    //     .status(404)
+    //     .json({ message: "No Devices are unassigned" });
+    //   } else {
+    //     console.log("Devices without assignedTo field:", results);
+    //     ress
+    //     .status(200)
+    //     .json({ message: "Unassigned Devices Retrieved successfully", devices:results });
+    //   }
+    // });
+
+    const unassignedDevices = await Device.find(query);
+    if (!unassignedDevices) {
+      return res.status(404).json({ message: "No Devices are unassigned" });
+    }
+    res
+      .status(200)
+      .json({
+        message: "Unassigned Devices Retrieved successfully",
+        devices: unassignedDevices,
+      });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.downloadDriver = async function(req, res){
+  const os = req.query.os;
+  const token = req.headers['authorization'];
+  const organizationId = req.headers['x-organization-id'];
+
+  if (!token || !organizationId) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  let driverPath = '';
+
+  switch (os) {
+    case 'Windows':
+      driverPath = path.join(__dirname, 'drivers', 'windows-driver.exe');
+      break;
+    case 'MacOS':
+      driverPath = path.join(__dirname, 'drivers', 'mac-driver.pkg');
+      break;
+    // Add cases for other OS if needed
+    default:
+      return res.status(400).json({ message: 'Unsupported OS' });
+  }
+
+  res.download(driverPath, 'ITSA_Driver.exe', (err) => {
+    if (err) {
+      console.error('Error downloading driver:', err);
+      res.status(500).json({ message: 'Error downloading driver' });
+    }
+  });
+
+}

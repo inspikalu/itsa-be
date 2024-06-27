@@ -1,9 +1,18 @@
 const bcrypt = require("bcrypt");
 const jwt = require('jsonwebtoken')
+const { validationResult, check } = require("express-validator");
 const crypto = require("crypto");
+const Admin = require('../models/Admin')
 const Organization = require("../models/Organization");
 const SubAdmin = require("../models/SubAdmin");
 const transporter = require("../config/email");
+
+exports.validateEmail = [
+  check("email").isEmail().withMessage("Please provide a valid email address"),
+];
+
+
+
 
 exports.createOrganization = async (req, res) => {
   try {

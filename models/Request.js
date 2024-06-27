@@ -15,6 +15,6 @@ const requestSchema = new mongoose.Schema({
     isUrgent: { type: Boolean, default: false,},
 });
 
-const Request = mongoose.model('MaintenanceRequest', requestSchema);
+const Request = mongoose.model('Request', requestSchema);
 module.exports = Request;
 

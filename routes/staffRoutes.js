@@ -5,7 +5,7 @@ const {verifyToken} = require("../middleware/auth")
 
 // Define your routes here
 router.post('/login',validateEmail ,staffLogin);
-// router.post('/request',verifyToken, newRequest )
-router.post('/request', newRequest )
+router.post('/request',verifyToken, newRequest )
+// router.post('/request', newRequest )
 
 module.exports = router;

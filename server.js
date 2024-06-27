@@ -28,7 +28,10 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Connect to MongoDB
 connectDB();
 
+app.use((req, res, next)=>{console.log(req.body, req.headers); next()})
+
 // Define routes
+app.post('/api/device', (req, res)=>{res.send(req.body)})
 app.use('/api/admin', adminRoutes);
 app.use('/api/subadmin', subAdminRoutes )
 app.use('/api/organization', organizationRoutes);

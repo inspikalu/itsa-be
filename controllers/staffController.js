@@ -53,39 +53,47 @@ exports.staffLogin = async (req, res) => {
 };
 
 exports.newRequest = async (req, res) => {
-    try {
-      const requestId = uuidv4();
-      console.log(requestId)
-      const { type, description, priority, requester, organization, ...otherData } = req.body;
-  
-      // Validate required fields (optional, enhance security)
-      if (!type || !description || !requester || !organization) {
-        return res.status(400).json({ message: "Missing required fields" });
-      }
+  try {
+    const requestId = uuidv4()
+    const { type, description, priority, requester, organization, ...otherData } = req.body;
 
-      // Check for duplicate requests
-    const existingRequest = await Request.findOne({ requestId });
-    console.log(requestId === existingRequest, "Check request id")
-    console.log(existingRequest, "This is existingRequest")
+    const {role} = req.user
+
+    if(role!=='staff') return res.status(403).json({ message: "Unauthorized to add request." });
+
+
+    // Validate required fields
+    if (!type || !description || !requester || !organization) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    // Check for duplicate requests based on type, description, requester, and organization
+    const existingRequest = await Request.findOne({
+      type,
+      description,
+      requester,
+      organization,
+    });
+
     if (existingRequest) {
       return res.status(409).json({ message: "Request already submitted" });
     }
-  
-      const newRequest = new Request({
-        requestId,
-        type,
-        description,
-        priority,
-        requester,
-        organization,
-        ...otherData, // capture any additional data sent
-      });
-  
-      await newRequest.save(); // Save the new request to the database
-  
-      res.status(201).json({ message: "Request created successfully", request: newRequest });
-    } catch (error) {
-      res.status(500).json({ message: error.message });
-    }
-  };
+
+    const newRequest = new Request({
+      requestId,
+      type,
+      description,
+      priority,
+      requester,
+      organization,
+      ...otherData, // used to capture any additional data sent
+    });
+
+    await newRequest.save();
+
+    res.status(201).json({ message: "Request created successfully", request: newRequest });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
   

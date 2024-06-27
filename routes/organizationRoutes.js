@@ -1,8 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const organizationController = require('../controllers/organizationController');
+const { verifyEmail, createAdmin, createOrganization} = require('../controllers/organizationController');
+const {verifyToken} = require("../middleware/auth")
 
-router.post('/create', organizationController.createOrganization);
+
+router.post('/create', createOrganization);
+
+// router.delete('/delete/:id', removeOrganization )
 
 module.exports = router;
 
